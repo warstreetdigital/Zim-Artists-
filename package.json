@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npx -y http-server . -p 3000",
-    "build": "rm -rf dist && mkdir -p dist && cp *.html *.css *.js dist/ 2>/dev/null || true && cp _redirects dist/ 2>/dev/null || true"
+    "build": "mkdir -p dist && cp *.html *.css *.js dist/ 2>/dev/null || true"
   },
   "dependencies": {}
 }

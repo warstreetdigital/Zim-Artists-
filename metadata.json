@@ -2,5 +2,5 @@
   "name": "Zim Artists",
   "description": "A premium national artist portfolio, digital press kit, and streaming platform for Zimbabwe's creative ecosystem.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }
