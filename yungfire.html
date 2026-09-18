@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YUNGFIRE | ZIM-ARTIST</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="identity.css">
+    <style>
+        @keyframes textBreathe {
+            0%, 100% { opacity: 0.3; transform: translateY(0); }
+            50% { opacity: 0.8; transform: translateY(-2px); }
+        }
+        .animate-breathe {
+            animation: textBreathe 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="fixed inset-0 gold-glow pointer-events-none"></div>
+    <div class="vignette"></div>
+    <header class="p-8 border-b border-white/5 flex justify-between items-center transition-all bg-black/40 backdrop-blur-md sticky top-0 z-50">
+        <a href="index.html" class="flex items-center gap-4 group">
+            <div class="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center group-hover:bg-amber-500 group-hover:text-black transition-all">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </div>
+            <span class="text-xs font-black uppercase tracking-tight">NATIONAL HUB</span>
+        </a>
+        <a href="https://www.instagram.com/zim_art.ists?igsh=MWRzdmV3dHVmNm53dg==" target="_blank" class="bg-amber-500 text-black px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+            FOLLOW
+        </a>
+        <div class="text-right">
+            <h1 class="text-4xl font-black font-anton tracking-tighter leading-none">YUNGFIRE</h1>
+            <p class="text-[9px] uppercase tracking-[0.4em] text-amber-500 font-bold mt-1">FLAME • NEW WAVE</p>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-6 py-32 text-center space-y-12 reveal-node">
+        <div class="w-32 h-32 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center mx-auto">
+            <i data-lucide="zap" class="w-8 h-8 text-amber-500"></i>
+        </div>
+        <div>
+            <h2 id="placeholder-title" class="text-6xl font-black font-anton uppercase tracking-tighter">PORTFOLIO LOADING</h2>
+            <p id="placeholder-status" class="text-white/40 uppercase tracking-[0.4em] text-xs mt-4 animate-breathe">System Update in Progress</p>
+        </div>
+        <p class="text-white/60 max-w-lg mx-auto leading-relaxed">
+            The national press kit system is currently synchronizing assets for YUNGFIRE. 
+            Check back for the full artist experience.
+        </p>
+        <div class="pt-12 flex flex-col items-center gap-6">
+            <button onclick="togglePressKit()" class="group relative px-10 py-4 border border-white/10 rounded-full overflow-hidden transition-all hover:border-amber-500/50">
+                <div id="btn-glow" class="absolute inset-0 bg-amber-500/0 group-hover:bg-amber-500/5 transition-all"></div>
+                <span id="btn-text" class="relative z-10 text-[10px] font-black uppercase tracking-[0.3em] text-white/60 group-hover:text-amber-500">INITIATE SYSTEM BYPASS</span>
+            </button>
+
+            <a href="index.html" class="inline-block px-12 py-4 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all rounded-full">
+                RETURN TO DISCOVERY
+            </a>
+        </div>
+    </main>
+
+    <footer id="system-footer" class="footer-system flex flex-col items-center pb-32 pt-24 reveal-node">
+        <div class="footer-glow-line"></div>
+        <p class="footer-text uppercase">POWERED BY WARSTREET EXPERIENCE MODEL</p>
+    </footer>
+
+    <script src="system.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        let systemActive = false;
+        function togglePressKit() {
+            systemActive = !systemActive;
+            const title = document.getElementById('placeholder-title');
+            const status = document.getElementById('placeholder-status');
+            const btnText = document.getElementById('btn-text');
+            const zapIcon = document.querySelector('[data-lucide="zap"]');
+            
+            if (systemActive) {
+                title.innerText = "SYSTEM BYPASS ACTIVE";
+                status.innerText = "Direct access channel opened";
+                status.classList.remove('animate-breathe');
+                status.classList.add('text-amber-500');
+                btnText.innerText = "RESTORE STABILIZATION";
+                if (zapIcon) {
+                    zapIcon.classList.add('scale-125');
+                    zapIcon.parentElement.classList.add('border-amber-500');
+                    zapIcon.parentElement.classList.add('bg-amber-500/20');
+                }
+            } else {
+                title.innerText = "PORTFOLIO LOADING";
+                status.innerText = "System Update in Progress";
+                status.classList.add('animate-breathe');
+                status.classList.remove('text-amber-500');
+                btnText.innerText = "INITIATE SYSTEM BYPASS";
+                if (zapIcon) {
+                    zapIcon.classList.remove('scale-125');
+                    zapIcon.parentElement.classList.remove('border-amber-500');
+                    zapIcon.parentElement.classList.remove('bg-amber-500/20');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

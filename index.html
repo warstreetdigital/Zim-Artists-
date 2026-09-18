@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZIM-ARTIST | Discovery Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="identity.css">
+</head>
+<body class="min-h-screen">
+    <div class="fixed inset-0 gold-glow pointer-events-none"></div>
+    <div class="vignette"></div>
+    <div class="energy-scan"></div>
+
+    <header class="p-8 md:p-12 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-8 reveal-node">
+        <div class="flex flex-col items-center md:items-start">
+            <h1 class="text-6xl md:text-8xl font-black font-anton tracking-tighter uppercase leading-none">ZIM-ARTIST</h1>
+            <div class="w-24 md:w-32 h-[3px] mt-4 zim-color-glow"></div>
+            <p class="text-[10px] uppercase tracking-[0.6em] text-amber-500 font-bold mt-6">National Creative Portfolio Hub</p>
+        </div>
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-8 text-[9px] font-black uppercase tracking-widest text-white/40">
+                <span>PRESS KIT SYSTEM</span>
+                <div class="w-[1px] h-4 bg-white/10"></div>
+                <span>EST. 2026</span>
+            </div>
+            <a href="https://www.instagram.com/zim_art.ists?igsh=MWRzdmV3dHVmNm53dg==" target="_blank" class="bg-amber-500 text-black px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                FOLLOW
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-24 relative z-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <!-- Artist Card: Rayblack -->
+            <a href="rayblack.html" class="group relative h-[600px] overflow-hidden rounded-[2rem] glass-panel border-white/5 reveal-node block">
+                <div class="absolute inset-x-0 bottom-0 top-1/4 z-10 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                <img src="https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/long-live-harare/cover.jpg" alt="Rayblack" class="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110 grayscale group-hover:grayscale-0">
+                <div class="absolute inset-0 p-8 flex flex-col justify-end z-20">
+                    <span class="text-[9px] font-black text-amber-500 uppercase tracking-[0.4em] mb-2">Hip Hop • Urban</span>
+                    <h3 class="text-4xl font-black font-anton uppercase tracking-tight leading-none mb-4">RAYBLACK.HE.IS</h3>
+                    <div class="flex items-center gap-4 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
+                        <span class="text-[9px] font-black text-white uppercase tracking-widest border border-white/20 px-4 py-2 rounded-full">Enter Portfolio</span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Artist Card: Yungfire (Placeholder) -->
+            <a href="yungfire.html" class="group relative h-[600px] overflow-hidden rounded-[2rem] glass-panel border-white/5 reveal-node block" style="transition-delay: 100ms">
+                <div class="absolute inset-x-0 bottom-0 top-1/2 z-10 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                <img src="https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&q=80" alt="Yungfire" class="w-full h-full object-cover grayscale transition-all duration-[3000ms] group-hover:scale-110">
+                <div class="absolute inset-0 p-8 flex flex-col justify-end z-20">
+                    <span class="text-[9px] font-black text-white/30 uppercase tracking-[0.4em] mb-2 group-hover:text-amber-500">Coming Soon</span>
+                    <h3 class="text-4xl font-black font-anton uppercase tracking-tight leading-none mb-4 opacity-40 group-hover:opacity-100">YUNGFIRE</h3>
+                </div>
+            </a>
+
+            <!-- Artist Card: Bands (Placeholder) -->
+             <a href="bands.html" class="group relative h-[600px] overflow-hidden rounded-[2rem] glass-panel border-white/5 reveal-node block" style="transition-delay: 300ms">
+                <div class="absolute inset-0 flex items-center justify-center border-2 border-dashed border-white/5">
+                    <span class="text-[9px] font-black uppercase tracking-[0.8em] text-white/10">+ ADD ARTIST</span>
+                </div>
+            </a>
+
+        </div>
+    </main>
+
+    <div id="toast-container" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-4"></div>
+
+    <footer id="system-footer" class="footer-system flex flex-col items-center pb-32 pt-24 reveal-node">
+        <div class="footer-glow-line"></div>
+        <p class="footer-text uppercase">POWERED BY WARSTREET EXPERIENCE MODEL</p>
+    </footer>
+
+    <script src="system.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>

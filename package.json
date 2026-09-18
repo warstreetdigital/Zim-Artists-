@@ -1,0 +1,11 @@
+{
+  "name": "zim-artist",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npx -y http-server . -p 3000",
+    "build": "mkdir -p dist && cp *.html *.css *.js dist/ 2>/dev/null || true"
+  },
+  "dependencies": {}
+}
