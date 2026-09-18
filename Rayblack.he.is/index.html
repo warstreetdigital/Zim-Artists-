@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rayblack | Long Live Harare</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="identity.css">
+    <style>
+        /* Specific page logic for Radio & Tracklist */
+        .radio-bar {
+            position: fixed; top: 100px; left: 50%; transform: translateX(-50%);
+            z-index: 40; display: flex; align-items: center; gap: 16px; padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px);
+            border-radius: 100px; border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .signal-indicator { width: 5px; height: 5px; background: #f59e0b; border-radius: 50%; position: relative; }
+        .signal-indicator::after {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 100%; height: 100%; background: inherit; border-radius: inherit;
+            animation: signalPulse 2s infinite ease-out;
+        }
+        @keyframes signalPulse {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+        }
+        @keyframes livePulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes accessPulse {
+            0% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); border-color: rgba(245, 158, 11, 0.1); }
+            50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); }
+            100% { box-shadow: 0 0 0px rgba(245, 158, 11, 0); border-color: rgba(245, 158, 11, 0.1); }
+        }
+        .access-pulse {
+            animation: accessPulse 3s infinite ease-in-out;
+        }
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: #D40000;
+            border-radius: 50%;
+            position: relative;
+        }
+        .live-dot::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border: 1px solid #D40000;
+            border-radius: 50%;
+            animation: livePulse 2s infinite ease-out;
+        }
+        .wave-bar { width: 1.5px; height: 100%; background: rgba(245, 158, 11, 0.3); border-radius: 1px; animation: waveBounce 1.2s infinite ease-in-out; }
+        @keyframes waveBounce { 0%, 100% { height: 2px; } 50% { height: 12px; } }
+
+        /* Footprint Media Layer */
+        #footprint-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 2000;
+            display: none; flex-direction: column; padding: 40px; justify-content: center;
+            backdrop-filter: blur(40px);
+        }
+        .footprint-media-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px; max-width: 1200px; margin: 0 auto; width: 100%;
+        }
+        .footprint-item {
+            aspect-ratio: 4/5; background: #111; border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 20px; overflow: hidden; position: relative;
+        }
+        .footprint-item img { width: 100%; h-full; object-fit: cover; opacity: 0.6; filter: grayscale(1); transition: all 0.5s ease; }
+        .footprint-item:hover img { opacity: 1; filter: grayscale(0); transform: scale(1.05); }
+
+        .playlist-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 24px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; position: relative;
+        }
+        .playlist-row:hover { background: rgba(245, 158, 11, 0.02); padding-left: 24px; }
+        .playlist-row.active-track { background: rgba(245, 158, 11, 0.04); padding-left: 24px; border-left: 2px solid #f59e0b; }
+    </style>
+    <style>
+        p, span, div, button {
+            letter-spacing: -0.015em;
+        }
+        
+        /* Spacing & Layout */
+        .section-gap { margin-top: 5rem; }
+        
+        /* Header Fixes */
+        .header-identity {
+            border-bottom: 2px solid rgba(245, 158, 11, 0.1);
+        }
+
+        /* Hero Refinement */
+        .hero-title {
+            font-size: clamp(3rem, 10vw, 5.5rem) !important;
+            line-height: 1.1;
+            letter-spacing: -0.04em;
+        }
+
+        /* Experience Layer: About Panel */
+        #aboutPanel {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle at top, #1a0d05, #000000 70%);
+            z-index: 1000; transform: translateY(100%);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+            overflow-y: auto; visibility: hidden; display: flex;
+            flex-direction: column; opacity: 0;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        #aboutPanel.active { transform: translateY(0); visibility: visible; opacity: 1; }
+        
+        .about-section { margin-bottom: 18px; text-align: left; position: relative; }
+        .about-hero-bg::before {
+            content: '';
+            position: absolute;
+            top: -120px;
+            left: -20px;
+            right: -20px;
+            bottom: 0;
+            background-image: url('https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/long-live-harare/cover.jpg');
+            background-size: cover;
+            background-position: center 10%;
+            opacity: 0.15;
+            mask-image: linear-gradient(to top, transparent, black 40%, black 70%, transparent);
+            -webkit-mask-image: linear-gradient(to top, transparent, black 40%, black 70%, transparent);
+            z-index: -1;
+            filter: grayscale(100%) contrast(110%);
+        }
+        .about-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; opacity: 0.55; margin-bottom: 6px; display: block; color: #f59e0b; text-transform: uppercase; }
+        .about-text { font-size: 18px; font-weight: 700; line-height: 1.3; max-width: 90%; color: white; }
+        .about-access-point {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.3s ease;
+        }
+        .about-access-point:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .about-separator {
+            width: 100%; height: 1px; background: rgba(255, 255, 255, 0.05);
+            margin: 32px 0;
+        }
+
+        .grain-overlay {
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes softGlow {
+            0%, 100% { opacity: 0.2; transform: translate(-10%, -10%) scale(1); }
+            50% { opacity: 0.4; transform: translate(0%, 0%) scale(1.1); }
+        }
+        .ambient-glow {
+            position: absolute;
+            top: -20%;
+            left: -20%;
+            width: 140%;
+            height: 140%;
+            background: radial-gradient(circle at center, rgba(245, 158, 11, 0.08) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+            animation: softGlow 15s infinite ease-in-out;
+        }
+
+        body.panel-open {
+            overflow: hidden !important;
+        }
+
+        #about-backdrop {
+            position: fixed;
+            inset: 0;
+            background: black;
+            opacity: 0;
+            z-index: 90;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        body.about-open #about-backdrop {
+            opacity: 0.6;
+        }
+
+        /* Waveform Animation for Listen Button */
+        .waveform-container {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            height: 12px;
+        }
+        .waveform-bar {
+            width: 2px;
+            height: 30%;
+            background: currentColor;
+            border-radius: 1px;
+            transition: height 0.2s ease;
+        }
+        .listening .waveform-bar {
+            animation: pulse-wave 0.6s infinite alternate ease-in-out;
+        }
+        @keyframes pulse-wave {
+            0% { height: 30%; }
+            100% { height: 100%; }
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="fixed inset-0 gold-glow pointer-events-none"></div>
+    <div class="vignette"></div>
+    <div class="energy-scan"></div>
+
+    <audio id="main-audio" preload="none" style="display:none"></audio>
+
+    <header class="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl py-5 px-6 flex justify-between items-center reveal-node header-identity">
+        <a href="index.html" class="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center hover:bg-amber-500 hover:text-black transition-all">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </a>
+        
+        <div class="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
+            <h1 class="text-[17px] font-black uppercase tracking-[0.3em] text-white select-none leading-none">ZIM-ARTIST</h1>
+            <div class="w-14 h-[3px] mt-2 zim-color-glow"></div>
+        </div>
+        
+        <div class="relative">
+            <a href="https://www.instagram.com/zim_art.ists?igsh=MWRzdmV3dHVmNm53dg==" target="_blank" class="bg-amber-500 text-black px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(245,158,11,0.25)]">
+                FOLLOW
+            </a>
+        </div>
+    </header>
+
+    <div class="radio-bar reveal-node">
+        <div class="flex items-center gap-3">
+            <div class="signal-indicator shadow-[0_0_8px_rgba(245,158,11,0.6)]"></div>
+            <div class="flex flex-col">
+                <span class="text-[8px] font-black uppercase tracking-[0.2em] text-amber-500/80 leading-none">LIVE</span>
+                <span class="text-[7px] font-bold uppercase tracking-[0.3em] text-gray-500 mt-1">SESSION</span>
+            </div>
+        </div>
+        <div class="w-[1px] h-4 bg-white/10"></div>
+        <div class="flex items-center gap-2 h-2">
+            <div class="wave-bar" style="animation-delay: 0s"></div>
+            <div class="wave-bar" style="animation-delay: -0.4s"></div>
+            <div class="wave-bar" style="animation-delay: -0.8s"></div>
+        </div>
+        <button onclick="window.CityBusToggleProxy('rayblack_livesession', 'https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/01-long-live-harare.mp3', 'LIVE SESSION')" class="flex items-center gap-2 group ml-1">
+            <i data-lucide="play" id="icon-rayblack_livesession" class="w-3 h-3 text-white group-hover:text-amber-500 transition-colors"></i>
+            <span class="text-[8px] font-bold uppercase tracking-widest text-white/60 group-hover:text-white">108.4 MHZ</span>
+        </button>
+    </div>
+
+    <main class="max-w-4xl mx-auto px-6 pt-40 pb-32 space-y-12 relative z-10">
+        <!-- Hero Section -->
+        <section class="mb-20">
+            <div class="flex items-center gap-4 px-2">
+                <span class="text-[9px] font-black uppercase tracking-[0.4em] text-amber-500">Artist Identity</span>
+                <div class="flex-1 h-[1px] bg-amber-500/10"></div>
+            </div>
+            
+            <style>
+                @keyframes heroSlowZoom {
+                    0% { transform: scale(1); }
+                    100% { transform: scale(1.15); }
+                }
+                .hero-image-drift {
+                    animation: heroSlowZoom 40s linear infinite alternate;
+                    will-change: transform;
+                }
+                .hero-image-base {
+                    filter: grayscale(1) brightness(0.6) contrast(1.1);
+                    transition: filter 1.8s cubic-bezier(0.2, 1, 0.2, 1), 
+                                transform 1.8s cubic-bezier(0.2, 1, 0.2, 1);
+                }
+                .hero-active-state .hero-image-base {
+                    filter: grayscale(0) brightness(1) contrast(1);
+                    transform: scale(1.05); /* Slight counter-move to emphasize activation */
+                }
+                .hero-active-state .hero-image-drift {
+                    animation-duration: 25s; /* Speed up slightly when active */
+                }
+                .hero-glow-layer {
+                    position: absolute;
+                    inset: 0;
+                    background: radial-gradient(circle at 40% 40%, rgba(245, 158, 11, 0.05) 0%, transparent 60%);
+                    mix-blend-mode: screen;
+                    pointer-events: none;
+                    z-index: 15;
+                    opacity: 0.3;
+                    transition: opacity 1.5s ease, background 1.5s ease;
+                }
+                .hero-active-state .hero-glow-layer {
+                    opacity: 1;
+                    background: radial-gradient(circle at 40% 40%, rgba(245, 158, 11, 0.2) 0%, transparent 75%);
+                }
+                @keyframes textAmbient {
+                    0%, 100% { opacity: 0.8; }
+                    50% { opacity: 1; filter: brightness(1.1); }
+                }
+                .animate-shimmer-text {
+                    animation: textAmbient 10s infinite ease-in-out;
+                }
+                .hero-content-shadow {
+                    text-shadow: 0 0 40px rgba(0,0,0,0.8);
+                }
+            </style>
+
+            <div id="hero-container" class="relative group reveal-node overflow-hidden rounded-[2.5rem] border border-white/5 artist-card-aura transition-all duration-1000 bg-black">
+                <div class="hero-glow-layer"></div>
+                <div id="hero-move-layer" class="aspect-[4/5] md:aspect-[16/9] overflow-hidden relative transition-transform duration-700 ease-out">
+                    <img id="hero-img" src="https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/long-live-harare/cover.jpg" 
+                         alt="Rayblack" 
+                         class="w-full h-full object-cover hero-image-base hero-image-drift" 
+                         style="object-position: center center">
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent z-10"></div>
+                <div class="absolute inset-0 flex flex-col justify-end p-8 md:p-12 z-20">
+                    <div class="max-w-4xl hero-content-shadow">
+                        <h2 class="hero-title font-black font-anton uppercase text-white animate-shimmer-text">
+                            RAYBLACK.HE.IS
+                        </h2>
+                        <p class="text-[9px] font-black tracking-[0.5em] text-amber-500/80 mt-4 uppercase">
+                            HARARE • EXPRESSION • ENERGY
+                        </p>
+                        
+                        <div class="flex items-center gap-3 mt-10">
+                            <button id="listen-btn" onclick="RayVoice.toggle()" 
+                                    class="bg-white/80 backdrop-blur-md text-black px-6 py-2.5 rounded-full text-[8.5px] font-black uppercase tracking-widest hover:bg-white hover:scale-105 transition-all flex items-center gap-3 opacity-90 hover:opacity-100">
+                                <span id="listen-status" class="flex items-center gap-2">
+                                    <i data-lucide="mic" class="w-3 h-3"></i>
+                                    <span>LISTEN</span>
+                                </span>
+                                <div id="wave-pulse" class="waveform-container hidden">
+                                    <div class="waveform-bar" style="animation-delay: 0s"></div>
+                                    <div class="waveform-bar" style="animation-delay: 0.2s"></div>
+                                    <div class="waveform-bar" style="animation-delay: 0.4s"></div>
+                                </div>
+                            </button>
+                            <button id="aboutBtn" 
+                                    class="px-6 py-2.5 rounded-full text-[8.5px] font-black uppercase tracking-widest border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 transition-all text-white/50 hover:text-white opacity-80 hover:opacity-100">
+                                ABOUT
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Discography -->
+        <section class="reveal-node">
+            <div class="flex items-center gap-4 px-2 mb-8">
+                <span class="text-[9px] font-black uppercase tracking-[0.4em] text-amber-500">Discography</span>
+                <div class="flex-1 h-[1px] bg-amber-500/10"></div>
+            </div>
+            <div id="track-list" class="divide-y divide-white/5 border-t border-b border-white/5 bg-black/20">
+                <!-- Data Injected Below -->
+            </div>
+
+            <!-- Global Player Controls -->
+            <div id="global-player" class="mt-12 p-8 glass-panel rounded-[2rem] border border-white/5 bg-white/[0.02] flex flex-col items-center gap-6 reveal-node opacity-0">
+                <div class="text-center">
+                    <span id="player-track-meta" class="text-[8px] font-black text-amber-500 uppercase tracking-[0.4em] block mb-2">NOT PLAYING</span>
+                    <h4 id="player-track-title" class="text-2xl font-black font-anton uppercase tracking-tighter">SELECT A TRACK</h4>
+                </div>
+                
+                <div class="flex items-center gap-8">
+                    <button onclick="CityBus.previous()" class="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all active:scale-90">
+                        <i data-lucide="skip-back" class="w-4 h-4 fill-current"></i>
+                    </button>
+                    
+                    <button onclick="CityBus.toggleCurrent()" id="global-play-btn" class="w-20 h-20 rounded-full bg-amber-500 flex items-center justify-center text-black hover:scale-105 transition-all shadow-[0_0_40px_rgba(245,158,11,0.2)] active:scale-95">
+                        <i data-lucide="play" id="global-icon" class="w-8 h-8 fill-current"></i>
+                    </button>
+                    
+                    <button onclick="CityBus.next()" class="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all active:scale-90">
+                        <i data-lucide="skip-forward" class="w-4 h-4 fill-current"></i>
+                    </button>
+                </div>
+
+                <div class="w-full max-w-sm mt-4">
+                    <div class="w-full h-[2px] bg-white/5 rounded-full overflow-hidden cursor-pointer" onclick="CityBus.seek(event, CityBus.currentId)">
+                        <div id="global-progress" class="h-full bg-amber-500 w-0 transition-all duration-100"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Movements -->
+        <section class="pt-24 pb-32 group/movements relative z-20 min-h-[600px]">
+            <div class="flex items-center justify-between px-2 mb-12">
+                <div class="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+                    <div class="flex items-center gap-4">
+                        <span class="text-[10px] font-black uppercase tracking-[1.2em] text-amber-500">SIGNALS</span>
+                        <div class="w-12 h-[2px] zim-color-glow"></div>
+                    </div>
+                    <div class="flex-1 h-[1px] bg-amber-500/10 hidden md:block"></div>
+                </div>
+                <div class="flex gap-2 ml-6">
+                    <button onclick="document.getElementById('movement-rail').scrollBy({left: -400, behavior: 'smooth'})" 
+                            class="w-10 h-10 rounded-full border border-white/5 bg-white/5 flex items-center justify-center text-white/40 hover:bg-white hover:text-black transition-all active:scale-95">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="document.getElementById('movement-rail').scrollBy({left: 400, behavior: 'smooth'})" 
+                            class="w-10 h-10 rounded-full border border-white/5 bg-white/5 flex items-center justify-center text-white/40 hover:bg-white hover:text-black transition-all active:scale-95">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="relative pt-12">
+                <div class="absolute -top-16 -left-10 text-[9rem] font-black text-white/[0.015] uppercase select-none pointer-events-none whitespace-nowrap tracking-tighter transform -rotate-1 italic" style="transform: scaleY(0.85); transform-origin: top left;">
+                    THE ENERGY NEVER SLEEPS • HARARE 26
+                </div>
+
+                <div id="movement-rail" class="flex overflow-x-auto gap-12 pb-16 snap-x no-scrollbar px-2 relative z-10">
+                    <!-- Card 1: LIVE SIGNAL -->
+                    <div id="live-signal-panel" class="flex-shrink-0 w-[85vw] md:w-[480px] snap-center glass-panel rounded-[2.5rem] p-10 flex flex-col justify-between min-h-[420px] group relative overflow-hidden border-2 border-white/10 hover:border-red-500/30 transition-all duration-700 bg-[#0c0c0c] shadow-2xl">
+                        <!-- Background Glow for focus -->
+                        <div class="absolute inset-x-0 bottom-0 top-1/2 bg-gradient-to-t from-red-600/10 to-transparent"></div>
+                        
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-3">
+                                <div class="live-dot"></div>
+                                <span class="text-[9px] font-black uppercase tracking-[0.4em] text-red-500">LIVE SIGNAL</span>
+                            </div>
+                            
+                            <h3 class="text-4xl font-black font-anton uppercase tracking-tight mt-8 leading-[1.1] transition-transform duration-500">
+                                <span id="live-status-text">HARARE FREQUENCY LIVE</span>
+                            </h3>
+                            <p class="text-[9px] text-white/30 uppercase tracking-[0.3em] font-bold mt-4">Broadcast from Harare.</p>
+                        </div>
+
+                        <div class="relative z-10 flex flex-col items-center">
+                            <!-- Minimal Waveform -->
+                            <div id="live-waves" class="flex items-end gap-1 h-12 mb-8 hidden">
+                                <div class="wave-bar" style="animation-delay: 0.1s"></div>
+                                <div class="wave-bar" style="animation-delay: 0.3s"></div>
+                                <div class="wave-bar" style="animation-delay: 0.5s"></div>
+                                <div class="wave-bar" style="animation-delay: 0.2s"></div>
+                                <div class="wave-bar" style="animation-delay: 0.4s"></div>
+                                <div class="wave-bar" style="animation-delay: 0.6s"></div>
+                                <div class="wave-bar" style="animation-delay: 0.1s"></div>
+                                <div class="wave-bar" style="animation-delay: 0.3s"></div>
+                            </div>
+
+                            <button id="tune-in-btn" onclick="LiveSignalBus.toggle()" class="w-full py-5 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl flex items-center justify-center gap-3">
+                                TUNE IN
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: SIGNALS — ACCESS -->
+                    <div id="access-card" class="flex-shrink-0 w-[85vw] md:w-[440px] snap-center glass-panel rounded-[2.5rem] p-10 flex flex-col justify-between min-h-[420px] group relative overflow-hidden border-2 border-white/10 transition-all duration-700 bg-[#0c0c0c] access-pulse shadow-2xl">
+                        <div class="absolute inset-x-0 bottom-0 top-1/2 bg-gradient-to-t from-amber-600/10 to-transparent opacity-30"></div>
+                        <div class="relative z-10">
+                            <span id="access-tag" class="text-[8px] font-black uppercase tracking-[0.3em] text-amber-500 px-3 py-1.5 border border-amber-500/20 rounded-full bg-amber-500/5 backdrop-blur-md">UNRELEASED ACCESS</span>
+                            <h3 id="access-title" class="text-4xl font-black font-anton uppercase tracking-tight mt-8 leading-[1.1]">UNRELEASED<br>ACCESS</h3>
+                            <p id="access-support" class="text-[9px] text-white/40 uppercase tracking-[0.3em] font-bold mt-4 leading-relaxed">Scan to unlock music before release.</p>
+                        </div>
+                        
+                        <div class="relative z-10">
+                            <p id="access-subtext" class="text-[12px] text-white/50 font-medium mb-8 max-w-[280px]">
+                                Exclusive drops inside official merch.
+                            </p>
+                            <button id="access-btn" onclick="AccessSystem.handleAction()" class="w-full py-5 border border-amber-500/30 bg-amber-500/10 text-amber-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] hover:bg-amber-500 hover:text-black transition-all shadow-xl">
+                                UNLOCK
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: SIGNALS — FOOTPRINT -->
+                    <div id="footprint-card" class="flex-shrink-0 w-[85vw] md:w-[440px] snap-center glass-panel rounded-[2.5rem] p-10 flex flex-col justify-between min-h-[420px] group relative overflow-hidden border-2 border-white/5 transition-all duration-700 bg-[#0c0c0c] shadow-2xl opacity-90 hover:opacity-100 hover:border-white/20">
+                        <div class="absolute inset-x-0 bottom-0 top-1/2 bg-gradient-to-t from-white/5 to-transparent"></div>
+                        <div class="relative z-10">
+                            <span class="text-[8px] font-black uppercase tracking-[0.3em] text-white/30 px-3 py-1.5 border border-white/5 rounded-full bg-white/5 backdrop-blur-md">FOOTPRINT</span>
+                            
+                            <div class="mt-8 space-y-4">
+                                <div class="flex items-center gap-4 group/item">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-white/10 group-hover/item:bg-amber-500 transition-colors"></div>
+                                    <span class="text-[10px] font-bold uppercase tracking-widest text-white/40 group-hover/item:text-white transition-colors">AVONDALE DROP 01</span>
+                                </div>
+                                <div class="flex items-center gap-4 group/item">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-white/10 group-hover/item:bg-amber-500 transition-colors"></div>
+                                    <span class="text-[10px] font-bold uppercase tracking-widest text-white/40 group-hover/item:text-white transition-colors">STREET SESSION 002</span>
+                                </div>
+                                <div class="flex items-center gap-4 group/item">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-white/10 group-hover/item:bg-amber-500 transition-colors"></div>
+                                    <span class="text-[10px] font-bold uppercase tracking-widest text-white/40 group-hover/item:text-white transition-colors">FIRST LLH PLAYBACK</span>
+                                </div>
+                            </div>
+
+                            <p class="text-[9px] text-white/20 uppercase tracking-[0.3em] font-bold mt-8">Captured in the city.</p>
+                        </div>
+                        
+                        <div class="relative z-10">
+                            <button onclick="FootprintSystem.open()" class="w-full py-5 bg-white/5 border border-white/10 text-white/60 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] hover:bg-white hover:text-black transition-all">
+                                VIEW
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="absolute -bottom-4 left-2 right-2 h-[2px] bg-white/5 rounded-full overflow-hidden">
+                    <div id="rail-progress" class="h-full bg-amber-500/40 w-1/3 transition-all duration-300"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Connect Section -->
+        <section class="reveal-node pb-16">
+            <div class="flex items-center gap-4 px-2 mb-8">
+                <span class="text-[9px] font-black uppercase tracking-[0.4em] text-amber-500">Connect</span>
+                <div class="flex-1 h-[1px] bg-amber-500/10"></div>
+            </div>
+            
+            <div class="glass-panel rounded-[2.5rem] p-10 border border-white/5 bg-white/[0.01] flex flex-col md:flex-row items-center justify-between gap-10">
+                <div class="flex-shrink-0">
+                    <a href="https://www.instagram.com/rayblack.he.is" target="_blank" class="bg-amber-500 text-black px-12 py-5 rounded-full text-[11px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_40px_rgba(245,158,11,0.25)] flex items-center justify-center">
+                        FOLLOW ARTIST
+                    </a>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-center gap-8 md:gap-16">
+                    <a href="https://wa.me/263779388560" target="_blank" class="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 hover:text-white flex items-center gap-3 transition-colors">
+                        <i data-lucide="message-circle" class="w-4 h-4 text-amber-500"></i> WhatsApp
+                    </a>
+                    <a href="https://www.instagram.com/rayblack.he.is" target="_blank" class="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 hover:text-white flex items-center gap-3 transition-colors">
+                        <i data-lucide="instagram" class="w-4 h-4 text-amber-500"></i> Instagram
+                    </a>
+                    <a href="https://youtube.com/@warstreet_studios" target="_blank" class="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 hover:text-white flex items-center gap-3 transition-colors">
+                        <i data-lucide="youtube" class="w-4 h-4 text-amber-500"></i> YouTube
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="about-backdrop"></div>
+    <div id="aboutPanel">
+        <div class="grain-overlay"></div>
+        <div class="ambient-glow"></div>
+        
+        <!-- Panel Header -->
+        <div class="sticky top-0 z-[1010] bg-black/20 backdrop-blur-xl py-6 px-8 flex justify-between items-center border-b border-white/5">
+            <button id="closeAbout" class="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <div class="flex-1 text-center">
+                <h3 class="text-2xl font-extrabold text-white uppercase tracking-normal leading-none">RAYBLACK.HE.IS</h3>
+            </div>
+            <div class="w-10 h-10 invisible"></div> <!-- Spacer for balance -->
+        </div>
+
+        <div class="relative z-10 max-w-xl mx-auto px-8 py-12 flex-1">
+            <!-- [A] SIGNATURE -->
+            <div class="about-section about-hero-bg">
+                <span class="about-label">Signature</span>
+                <p class="about-text">Afro emotional rap — not genre, frequency.</p>
+            </div>
+
+            <!-- [B] ORIGIN -->
+            <div class="about-section">
+                <span class="about-label">Origin</span>
+                <p class="about-text">Built from Harare. Raw. Unfiltered. Lived.</p>
+            </div>
+
+            <!-- [C] INTENT -->
+            <div class="about-section">
+                <span class="about-label">Intent</span>
+                <p class="about-text">To make people feel before they understand.</p>
+            </div>
+
+            <!-- [D] WORLD -->
+            <div class="about-section">
+                <div class="mb-4">
+                    <span class="about-label">World</span>
+                    <p class="about-text">Long Live Harare is not just music — it’s a living sonic environment.</p>
+                </div>
+                <div class="flex gap-10">
+                    <div>
+                        <span class="about-label !mb-0 text-white/30">RELEASE</span>
+                        <span class="text-[10px] font-bold text-white/80">MAY 2026</span>
+                    </div>
+                    <div>
+                        <span class="about-label !mb-0 text-white/30">TYPE</span>
+                        <span class="text-[10px] font-bold text-white/80 uppercase italic">Sonic World</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="about-separator"></div>
+
+            <!-- [E] EXPERIENCE LAYER -->
+            <div class="space-y-6">
+                <div class="flex items-center gap-4">
+                    <span class="about-label !mb-0 opacity-40">Access Points</span>
+                    <div class="flex-1 h-[1px] bg-white/5"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="about-access-point group cursor-pointer">
+                        <i data-lucide="music" class="w-3 h-3 text-amber-500 mb-2 opacity-50 group-hover:opacity-100"></i>
+                        <span class="block text-[8px] font-black uppercase tracking-widest text-white/90">Unreleased Drops</span>
+                    </div>
+                    <div class="about-access-point group cursor-pointer">
+                        <i data-lucide="mic-2" class="w-3 h-3 text-amber-500 mb-2 opacity-50 group-hover:opacity-100"></i>
+                        <span class="block text-[8px] font-black uppercase tracking-widest text-white/90">Voice Notes</span>
+                    </div>
+                    <div class="about-access-point group cursor-pointer">
+                        <i data-lucide="radio" class="w-3 h-3 text-amber-500 mb-2 opacity-50 group-hover:opacity-100"></i>
+                        <span class="block text-[8px] font-black uppercase tracking-widest text-white/90">Live Sessions</span>
+                    </div>
+                    <div class="about-access-point group cursor-pointer">
+                        <i data-lucide="map-pin" class="w-3 h-3 text-amber-500 mb-2 opacity-50 group-hover:opacity-100"></i>
+                        <span class="block text-[8px] font-black uppercase tracking-widest text-white/90">Explore City</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [F] DIRECT ACCESS -->
+            <div class="space-y-3 pt-4">
+                <a href="https://wa.me/263779388560" target="_blank" class="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white hover:text-black transition-all group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="message-circle" class="w-4 h-4 text-amber-500 group-hover:text-black"></i>
+                        <span class="font-black text-[9px] uppercase tracking-[0.2em]">WHATSAPP</span>
+                    </div>
+                    <i data-lucide="arrow-right" class="w-3 h-3 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all"></i>
+                </a>
+                <a href="https://www.instagram.com/rayblack.he.is" target="_blank" class="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white hover:text-black transition-all group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="instagram" class="w-4 h-4 text-amber-500 group-hover:text-black"></i>
+                        <span class="font-black text-[9px] uppercase tracking-[0.2em]">INSTAGRAM</span>
+                    </div>
+                    <i data-lucide="arrow-right" class="w-3 h-3 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all"></i>
+                </a>
+                <a href="https://youtube.com/@warstreet_studios" target="_blank" class="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white hover:text-black transition-all group">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="youtube" class="w-4 h-4 text-amber-500 group-hover:text-black"></i>
+                        <span class="font-black text-[9px] uppercase tracking-[0.2em]">YOUTUBE</span>
+                    </div>
+                    <i data-lucide="arrow-right" class="w-3 h-3 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-4"></div>
+
+    <div id="footprint-overlay">
+        <div class="flex items-center justify-between mb-12">
+            <div>
+                <span class="text-[9px] font-black uppercase tracking-[0.6em] text-white/40">ZIM-ARTIST FOOTPRINT</span>
+                <h3 class="text-3xl font-black font-anton uppercase text-white tracking-widest mt-2">CITY CAPTURED</h3>
+            </div>
+            <button onclick="FootprintSystem.close()" class="w-12 h-12 border border-white/10 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        
+        <div class="footprint-media-grid no-scrollbar overflow-y-auto pr-4">
+            <div class="footprint-item group">
+                <img src="https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/footprint_01.jpg" alt="Footprint">
+                <div class="absolute bottom-6 left-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span class="text-[8px] font-black text-white/80 uppercase tracking-widest">AVONDALE DROP • 11:04 PM</span>
+                </div>
+            </div>
+            <div class="footprint-item group">
+                <img src="https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/footprint_02.jpg" alt="Footprint">
+                <div class="absolute bottom-6 left-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span class="text-[8px] font-black text-white/80 uppercase tracking-widest">STREET SESSION 002 • CBD</span>
+                </div>
+            </div>
+            <div class="footprint-item group">
+                <img src="https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/footprint_03.jpg" alt="Footprint">
+                <div class="absolute bottom-6 left-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span class="text-[8px] font-black text-white/80 uppercase tracking-widest">LLH PLAYBACK • PRIVATE</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-12 text-center">
+            <p class="text-[9px] font-bold text-white/20 uppercase tracking-[0.4em]">RAW ARCHIVE • NO POLISH</p>
+        </div>
+    </div>
+
+    <footer id="system-footer" class="footer-system flex flex-col items-center pb-32 pt-24">
+        <div class="footer-glow-line"></div>
+        <p class="footer-text uppercase">POWERED BY WARSTREET EXPERIENCE MODEL</p>
+    </footer>
+
+    <script src="system.js"></script>
+    <script>
+        // Core CityBus Audio Logic
+        const CityBus = {
+            audio: document.getElementById('main-audio'),
+            currentId: null,
+            currentIndex: -1,
+            togglePlay(id, src, name) {
+                if (!this.audio) return;
+                
+                if (window.RayVoice && window.RayVoice.isPlaying) {
+                    window.RayVoice.stop();
+                }
+
+                if (this.currentId === id) {
+                    if (this.audio.paused) {
+                        this.audio.play();
+                    } else {
+                        this.audio.pause();
+                    }
+                } else {
+                    this.audio.src = src;
+                    this.audio.play();
+                    this.currentId = id;
+                    this.currentIndex = tracks.findIndex(t => t.id === id);
+                }
+                
+                this.audio.onplay = () => this.updateUI();
+                this.audio.onpause = () => this.updateUI();
+                this.audio.ontimeupdate = () => this.updateProgress();
+                this.audio.onended = () => {
+                    this.next();
+                };
+
+                this.updateUI();
+            },
+            toggleCurrent() {
+                if (!this.currentId && tracks.length > 0) {
+                    this.togglePlay(tracks[0].id, tracks[0].src, tracks[0].title);
+                } else if (this.audio) {
+                    if (this.audio.paused) this.audio.play();
+                    else this.audio.pause();
+                }
+            },
+            next() {
+                let nextIdx = this.currentIndex + 1;
+                if (nextIdx >= tracks.length) nextIdx = 0;
+                const track = tracks[nextIdx];
+                this.togglePlay(track.id, track.src, track.title);
+            },
+            previous() {
+                let prevIdx = this.currentIndex - 1;
+                if (prevIdx < 0) prevIdx = tracks.length - 1;
+                const track = tracks[prevIdx];
+                this.togglePlay(track.id, track.src, track.title);
+            },
+            seek(event, id) {
+                if (event && event.stopPropagation) event.stopPropagation();
+                if (!this.audio) return;
+                const targetId = id || this.currentId;
+                if (!targetId || this.currentId !== targetId) return;
+                
+                const rect = event.currentTarget.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const percentage = x / rect.width;
+                if (!isNaN(this.audio.duration)) {
+                    this.audio.currentTime = percentage * this.audio.duration;
+                }
+            },
+            updateProgress() {
+                if (!this.currentId) return;
+                const progressBar = document.getElementById(`progress-${this.currentId}`);
+                const globalProgress = document.getElementById('global-progress');
+                
+                if (this.audio && !isNaN(this.audio.duration)) {
+                    const percentage = (this.audio.currentTime / this.audio.duration) * 100;
+                    if (progressBar) progressBar.style.width = `${percentage}%`;
+                    if (globalProgress) globalProgress.style.width = `${percentage}%`;
+                }
+            },
+            updateUI() {
+                const allIcons = document.querySelectorAll('[id^="icon-"]');
+                const globalIcon = document.getElementById('global-icon');
+                const globalPlayer = document.getElementById('global-player');
+                const playerTitle = document.getElementById('player-track-title');
+                const playerMeta = document.getElementById('player-track-meta');
+
+                const isPlaying = (this.audio && !this.audio.paused);
+
+                allIcons.forEach(icon => {
+                    const id = icon.id.replace('icon-', '');
+                    const isActive = (id === this.currentId && isPlaying);
+                    icon.setAttribute('data-lucide', isActive ? 'pause' : 'play');
+                });
+
+                if (globalIcon) {
+                    globalIcon.setAttribute('data-lucide', isPlaying ? 'pause' : 'play');
+                }
+
+                if (globalPlayer && this.currentId) {
+                    globalPlayer.classList.add('active');
+                    globalPlayer.style.opacity = '1';
+                    const currentTrack = tracks[this.currentIndex];
+                    if (currentTrack) {
+                        if (playerTitle) playerTitle.innerText = currentTrack.title;
+                        if (playerMeta) playerMeta.innerText = `NOW PLAYING • ${currentTrack.metadata}`;
+                    }
+                }
+
+                const allRows = document.querySelectorAll('.playlist-row');
+                allRows.forEach(row => {
+                    const trackId = row.getAttribute('data-track-id');
+                    if (trackId === this.currentId) {
+                        row.classList.add('active-track');
+                    } else {
+                        row.classList.remove('active-track');
+                        const bar = document.getElementById(`progress-${trackId}`);
+                        if (bar) bar.style.width = '0%';
+                    }
+                });
+
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        };
+
+        // Hero Interaction Engine
+        const HeroEngine = {
+            activate() {
+                const container = document.getElementById('hero-container');
+                if (container) {
+                    container.classList.add('hero-active-state');
+                }
+            },
+            deactivate() {
+                const container = document.getElementById('hero-container');
+                const aboutPanel = document.getElementById('aboutPanel');
+                const isAboutOpen = aboutPanel && aboutPanel.classList.contains('active');
+                if (container && window.RayVoice && !window.RayVoice.isPlaying && !isAboutOpen) {
+                    container.classList.remove('hero-active-state');
+                }
+            },
+            initParallax() {
+                const container = document.getElementById('hero-container');
+                const mover = document.getElementById('hero-move-layer');
+                if (!container || !mover) return;
+
+                container.addEventListener('mousemove', (e) => {
+                    const rect = container.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) / rect.width;
+                    const y = (e.clientY - rect.top) / rect.height;
+                    
+                    const moveX = (x - 0.5) * 30; // 30px max move
+                    const moveY = (y - 0.5) * 30;
+
+                    mover.style.transform = `translate(${moveX}px, ${moveY}px) scale(1.05)`;
+                });
+
+                container.addEventListener('mouseleave', () => {
+                    mover.style.transform = `translate(0px, 0px) scale(1)`;
+                });
+            }
+        };
+
+        // Voice Note Engine
+        const RayVoice = {
+            audio: new Audio('https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/voice-note-intro.mp3'),
+            isPlaying: false,
+            toggle() {
+                const btn = document.getElementById('listen-btn');
+                const status = document.getElementById('listen-status');
+                const pulse = document.getElementById('wave-pulse');
+
+                if (this.isPlaying) {
+                    this.stop();
+                } else {
+                    HeroEngine.activate();
+                    if (CityBus.audio && !CityBus.audio.paused) {
+                        CityBus.audio.pause();
+                    }
+                    
+                    this.audio.play();
+                    this.isPlaying = true;
+                    btn.classList.add('listening');
+                    status.classList.add('hidden');
+                    pulse.classList.remove('hidden');
+                }
+
+                this.audio.onended = () => this.stop();
+            },
+            stop() {
+                this.audio.pause();
+                this.audio.currentTime = 0;
+                this.isPlaying = false;
+                const btn = document.getElementById('listen-btn');
+                const status = document.getElementById('listen-status');
+                const pulse = document.getElementById('wave-pulse');
+                
+                if (btn) btn.classList.remove('listening');
+                if (status) status.classList.remove('hidden');
+                if (pulse) pulse.classList.add('hidden');
+                HeroEngine.deactivate();
+            }
+        };
+        window.RayVoice = RayVoice;
+
+        const LiveSignalBus = {
+            audio: new Audio('https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/livesession.mp3'),
+            isPlaying: false,
+            toggle() {
+                const btn = document.getElementById('tune-in-btn');
+                const waves = document.getElementById('live-waves');
+                const statusText = document.getElementById('live-status-text');
+                const phrases = ['PRIVATE SESSION ACTIVE', 'HARARE FREQUENCY LIVE', 'LLH BROADCAST RUNNING'];
+                
+                if (this.isPlaying) {
+                    this.audio.pause();
+                    this.isPlaying = false;
+                    if(btn) btn.innerText = 'TUNE IN';
+                    if(waves) waves.classList.add('hidden');
+                } else {
+                    this.audio.play().catch(e => console.log('Audio play blocked or source missing'));
+                    this.isPlaying = true;
+                    if(btn) btn.innerText = 'DISCONNECT';
+                    if(waves) waves.classList.remove('hidden');
+                    if(statusText) statusText.innerText = phrases[Math.floor(Math.random() * phrases.length)];
+                }
+                this.audio.onended = () => {
+                    this.isPlaying = false;
+                    if(btn) btn.innerText = 'TUNE IN';
+                    if(waves) waves.classList.add('hidden');
+                };
+            }
+        };
+        window.LiveSignalBus = LiveSignalBus;
+
+        const unreleasedTracks = [
+            { id: 'unreleased-1', title: 'HARARE GHOST VERSION', src: 'https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/unreleased_01.mp3', metadata: 'UNRELEASED • 2026 ARCHIVE' },
+            { id: 'unreleased-2', title: 'WARSTREET ANTHEM (RAW)', src: 'https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/unreleased_02.mp3', metadata: 'UNRELEASED • STUDIO LEAK' }
+        ];
+
+        const AccessSystem = {
+            isUnlocked: localStorage.getItem('rayblack_unreleased_unlocked') === 'true',
+            currentUnreleasedIndex: 0,
+            init() {
+                if (this.isUnlocked) this.renderUnlocked();
+            },
+            handleAction() {
+                if (this.isUnlocked) {
+                    window.RayVoice.speak("Welcome to the inner circle. Playing unreleased frequency.");
+                    
+                    const track = unreleasedTracks[this.currentUnreleasedIndex];
+                    if (window.CityBus) {
+                        // We hijack CityBus but we need to bypass the standard 'tracks' array check or update UI manually
+                        window.CityBus.audio.src = track.src;
+                        window.CityBus.audio.play();
+                        
+                        const playerTitle = document.getElementById('player-track-title');
+                        const playerMeta = document.getElementById('player-track-meta');
+                        const globalPlayer = document.getElementById('global-player');
+                        
+                        if (globalPlayer) globalPlayer.classList.add('active');
+                        if (playerTitle) playerTitle.innerText = track.title;
+                        if (playerMeta) playerMeta.innerText = track.metadata;
+                        
+                        this.currentUnreleasedIndex = (this.currentUnreleasedIndex + 1) % unreleasedTracks.length;
+                    }
+                } else {
+                    this.unlock();
+                }
+            },
+            unlock() {
+                // Simulate a QR scan or verification process
+                const passcode = prompt("ENTER ACCESS CODE (Scan Merch QR):", "LLH2026");
+                if (passcode === "LLH2026") {
+                    this.isUnlocked = true;
+                    localStorage.setItem('rayblack_unreleased_unlocked', 'true');
+                    this.renderUnlocked();
+                    window.RayVoice.speak("Access granted. HARARE UNRELEASED available.");
+                } else {
+                    alert("INVALID CODE. ACCESS DENIED.");
+                }
+            },
+            renderUnlocked() {
+                const tag = document.getElementById('access-tag');
+                const title = document.getElementById('access-title');
+                const support = document.getElementById('access-support');
+                const subtext = document.getElementById('access-subtext');
+                const btn = document.getElementById('access-btn');
+                const card = document.getElementById('access-card');
+
+                if(tag) {
+                    tag.innerText = "ACCESS GRANTED";
+                    tag.classList.replace('text-amber-500', 'text-green-500');
+                    tag.classList.replace('border-amber-500/20', 'border-green-500/20');
+                }
+                if(title) title.innerHTML = "LISTEN BEFORE<br>RELEASE";
+                if(support) support.innerText = "Private audio unlocked.";
+                if(subtext) subtext.innerText = "You have bypassed the public timeline.";
+                if(btn) {
+                    btn.innerText = "LISTEN FIRST";
+                    btn.classList.replace('text-amber-500', 'text-white');
+                    btn.classList.replace('bg-amber-500/10', 'bg-white/10');
+                    btn.classList.replace('border-amber-500/30', 'border-white/20');
+                }
+                if(card) {
+                    card.classList.remove('access-pulse');
+                    card.classList.replace('from-amber-500/[0.03]', 'from-green-500/[0.03]');
+                }
+            }
+        };
+        window.AccessSystem = AccessSystem;
+
+        const FootprintSystem = {
+            overlay: document.getElementById('footprint-overlay'),
+            open() {
+                if (!this.overlay) return;
+                this.overlay.style.display = 'flex';
+                document.body.classList.add('panel-open');
+                if (window.lucide) window.lucide.createIcons();
+            },
+            close() {
+                if (!this.overlay) return;
+                this.overlay.style.display = 'none';
+                document.body.classList.remove('panel-open');
+            }
+        };
+        window.FootprintSystem = FootprintSystem;
+        document.addEventListener('DOMContentLoaded', () => AccessSystem.init());
+
+        // About Panel Engine
+        const AboutEngine = {
+            panel: document.getElementById('aboutPanel'),
+            btn: document.getElementById('aboutBtn'),
+            closeBtn: document.getElementById('closeAbout'),
+            startY: 0,
+            currentY: 0,
+            
+            init() {
+                if (this.btn) this.btn.addEventListener('click', () => this.open());
+                if (this.closeBtn) this.closeBtn.addEventListener('click', () => this.close());
+                
+                // Swipe to close logic
+                if (this.panel) {
+                    this.panel.addEventListener('touchstart', (e) => this.handleTouchStart(e), {passive: true});
+                    this.panel.addEventListener('touchmove', (e) => this.handleTouchMove(e), {passive: false});
+                    this.panel.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+                }
+            },
+            
+            handleTouchStart(e) {
+                if (this.panel.scrollTop > 0) return;
+                this.startY = e.touches[0].clientY;
+            },
+            
+            handleTouchMove(e) {
+                if (this.panel.scrollTop > 0) return;
+                this.currentY = e.touches[0].clientY;
+                const deltaY = this.currentY - this.startY;
+                if (deltaY > 0) {
+                    e.preventDefault();
+                    this.panel.style.transform = `translateY(${deltaY}px)`;
+                    this.panel.style.transition = 'none';
+                    this.panel.style.opacity = Math.max(0.5, 1 - (deltaY / 1000)).toString();
+                }
+            },
+            
+            handleTouchEnd(e) {
+                if (this.panel.scrollTop > 0) return;
+                const deltaY = this.currentY - this.startY;
+                if (deltaY > 150) {
+                    this.close();
+                } else {
+                    this.panel.style.transform = '';
+                    this.panel.style.opacity = '1';
+                    this.panel.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease';
+                }
+                this.startY = 0;
+                this.currentY = 0;
+            },
+            
+            open() {
+                if (!this.panel) return;
+                HeroEngine.activate();
+                this.panel.style.transform = '';
+                this.panel.style.opacity = '1';
+                this.panel.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease';
+                this.panel.classList.add('active');
+                document.body.classList.add('panel-open');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            },
+            
+            close() {
+                if (!this.panel) return;
+                this.panel.classList.remove('active');
+                this.panel.style.transform = 'translateY(100%)';
+                this.panel.style.opacity = '0';
+                this.panel.style.transition = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease';
+                document.body.classList.remove('panel-open');
+                HeroEngine.deactivate();
+            }
+        };
+
+        // Override system bio toggle to point to our new engine
+        const initAboutOverride = () => {
+            if (window.ZimSystem) {
+                window.ZimSystem.toggleBio = (show) => {
+                    if (show) AboutEngine.open();
+                    else AboutEngine.close();
+                };
+            } else {
+                setTimeout(initAboutOverride, 100);
+            }
+        };
+        initAboutOverride();
+
+        // Static Track Data
+        const tracks = [
+            { id: 'track01', title: 'Long Live Harare', src: 'https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/01-long-live-harare.mp3', metadata: 'May 2026 • LLH' },
+            { id: 'track02', title: 'First Day Out', src: 'https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/02-first-day-out.mp3', metadata: 'May 2026 • LLH' },
+            { id: 'track03', title: 'Harare Street Talk', src: 'https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/03-harare-street-talk.mp3', metadata: 'May 2026 • LLH' },
+            { id: 'track04', title: 'No Receipts', src: 'https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/04-no-receipts.mp3', metadata: 'May 2026 • LLH' },
+            { id: 'track05', title: 'Mvura Yemwedzi', src: 'https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/05-mvura-yemwedzi.mp3', metadata: 'May 2026 • LLH' },
+            { id: 'track06', title: 'City Moves', src: 'https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/06-city-moves.mp3', metadata: 'May 2026 • LLH' },
+            { id: 'track07', title: 'Ndiri Kure', src: 'https://pub-e81a254724df4bfaa01f780b72af68c4.r2.dev/samora/rayblack.he.is/07-ndiri-kure.mp3', metadata: 'May 2026 • LLH' }
+        ];
+
+        window.CityBusToggleProxy = (id, src, name) => CityBus.togglePlay(id, src, name);
+        window.CityBusSeekProxy = (event, id) => CityBus.seek(event, id);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            HeroEngine.initParallax();
+            AboutEngine.init();
+
+            const rail = document.getElementById('movement-rail');
+            const railProgress = document.getElementById('rail-progress');
+            if (rail && railProgress) {
+                rail.addEventListener('scroll', () => {
+                    const maxScroll = rail.scrollWidth - rail.clientWidth;
+                    const scrollPercentage = (rail.scrollLeft / maxScroll) * 100;
+                    railProgress.style.width = `${Math.max(10, scrollPercentage)}%`;
+                });
+            }
+
+            const container = document.getElementById('track-list');
+            if (container) {
+                tracks.forEach((t, i) => {
+                    const div = document.createElement('div');
+                    div.className = "playlist-row group";
+                    div.setAttribute('data-track-id', t.id);
+                    div.onclick = () => CityBus.togglePlay(t.id, t.src, t.title);
+                    div.innerHTML = `
+                        <div class="flex items-center gap-8 py-6 px-4">
+                            <span class="text-[8px] font-black text-white/10 tracking-tighter uppercase whitespace-nowrap">${(i+1).toString().padStart(2,'0')} / LLH</span>
+                            <div>
+                                <h4 class="font-black font-anton text-xl md:text-2xl tracking-tighter uppercase group-hover:text-amber-500 transition-colors">${t.title}</h4>
+                                <div class="flex items-center gap-3 mt-4">
+                                    <p class="text-[7px] text-white/30 font-black uppercase tracking-[0.2em]">RAYBLACK</p>
+                                    <span class="text-[7px] text-white/5">•</span>
+                                    <span class="text-[7px] text-white/10 font-medium uppercase tracking-[0.05em]">${t.metadata}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-10 h-10 flex items-center justify-center opacity-10 group-hover:opacity-100 transition-all pr-4">
+                            <i data-lucide="play" id="icon-${t.id}" class="w-3.5 h-3.5 text-amber-500 fill-current"></i>
+                        </div>
+                        <div class="absolute bottom-0 left-0 w-full h-[3px] bg-white/5 cursor-pointer opacity-0 group-[.active-track]:opacity-100 transition-opacity overflow-hidden" 
+                             onclick="CityBusSeekProxy(event, '${t.id}')">
+                            <div class="h-full bg-amber-500 w-0 transition-all duration-100" id="progress-${t.id}"></div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            // Safety: Force reveal if system.js didn't catch everything or lagged
+            if (window.ZimSystem && typeof window.ZimSystem.initReveal === 'function') {
+                window.ZimSystem.initReveal();
+            }
+        });
+    </script>
+</body>
+</html>
